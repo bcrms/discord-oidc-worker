@@ -126,18 +126,58 @@ app.post('/token', async (c) => {
 	let preferred_username = userInfo['username']
 
 	if (userInfo['discriminator'] && userInfo['discriminator'] !== '0'){
-		preferred_username += `#${userInfo['discriminator']}`
+		preferred_username += `_${userInfo['discriminator']}`
 	}
 
-	let displayName = userInfo['global_name'] ?? userInfo['username']
+	let displayName
+
+	if (userInfo['global_name'] === undefined) {
+		displayName = userInfo['username']
+	} else {
+		displayName = userInfo['global_name']
+	}
+
+	let given_name = userInfo['username']
+
+	if (userInfo['discriminator'] && userInfo['discriminator'] !== '0'){
+		given_name += `_${userInfo['discriminator']}`
+	}
+
+	let nickname = userInfo['username']
+
+	if (userInfo['discriminator'] && userInfo['discriminator'] !== '0'){
+		given_name += `_${userInfo['discriminator']}`
+	}
+
+
+
+	console.log({
+		iss: 'https://cloudflare.com',
+		aud: config.clientId,
+		preferred_username: preferred_username,
+		given_name: given_name,
+		nickname: nickname,
+		sub: userInfo['id'],
+		...userInfo,
+		...roleClaims,
+		email: userInfo['email'],
+		global_name: userInfo['global_name'],
+		name: displayName,
+		guilds: servers
+	})
 
 	const idToken = await new jose.SignJWT({
 		iss: 'https://cloudflare.com',
 		aud: config.clientId,
-		preferred_username,
+		preferred_username: preferred_username,
+		given_name: given_name,
+		family_name: given_name,
+		middle_name: given_name,
+		nickname: nickname,
+		sub: userInfo['id'],
 		...userInfo,
 		...roleClaims,
-		email: userInfo['email'],
+		email: "bcrms_" + userInfo['id'] + "@bcrms.dev",
 		global_name: userInfo['global_name'],
 		name: displayName,
 		guilds: servers
@@ -147,6 +187,7 @@ app.post('/token', async (c) => {
 		.setAudience(config.clientId)
 		.sign((await loadOrGenerateKeyPair(c.env.KV)).privateKey)
 
+		
 	return c.json({
 		...r,
 		scope: 'identify email',
